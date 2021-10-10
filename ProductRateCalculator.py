@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[32]:
-
 
 import numpy_financial as npf
 import pandas as pd
@@ -90,28 +88,11 @@ class ProductRateCalculator():
         )
 
 
-# In[39]:
-
-
 results = ProductRateCalculator(399, 'Apple iPhone SE (2020) 64GB')
 results.rate_df
 
 
-# In[41]:
-
-
 results.clean_finance_rates()
 results.print_results()
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
 
 
