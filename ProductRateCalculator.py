@@ -168,6 +168,7 @@ class MainPanel(wx.Panel):
         self.btn02 = wx.Button(self, label="Remove Record", size=(100,-1))
         self.btn02.Bind(wx.EVT_BUTTON, self.delete_record)
         self.btn03 = wx.Button(self, label="Export Excel", size=(100,-1))
+        self.btn03.Bind(wx.EVT_BUTTON, self.on_export)
         
         button_sizer.Add(self.btn01, 0, wx.CENTER, 5)
         button_sizer.Add(self.btn02, 0, wx.CENTER, 5)
@@ -178,6 +179,23 @@ class MainPanel(wx.Panel):
         self.SetSizerAndFit(main_vert_sizer)
         self.update_olv()
         
+    def convert_rates_to_df(self):
+        df = pd.DataFrame()
+        results = self.rate_results
+        names = [result.name for result in results]
+        retail = [result.retail for result in results]
+        contract = [result.contract for result in results]
+        mdaas = [result.mdaas for result in results]
+        fin_24 = [result.finance_24m for result in results]
+        fin_36 = [result.finance_36m for result in results]
+        df['name'] = names
+        df['retail'] = retail
+        df['contract'] = contract
+        df['mdaas'] = mdaas
+        df['finance_24'] = fin_24
+        df['finance_36'] = fin_36
+        return df            
+        
     def store_product_rates(self, ProductOlv):
         self.rate_results.append(ProductOlv)
         self.update_olv()
@@ -186,14 +204,21 @@ class MainPanel(wx.Panel):
         with RecordDialog(parent=self) as dlg:
             dlg.ShowModal()
             
+    def on_export(self, event):
+        df = self.convert_rates_to_df()
+        print(df)    
+        
     def delete_record(self, event):
         selected_row = self.price_olv.GetSelectedObject()
         if selected_row is None:
-            show_message("Please make sure to select a record!", "Error")
+            show_message("Please make sure to " \
+                         "select a record!", 
+                         "Error")
             return
         for result in self.rate_results:
             if result == selected_row:
                 self.rate_results.remove(result)
+                break
         self.update_olv()
     
         
@@ -263,11 +288,17 @@ class RecordDialog(wx.Dialog):
         name = self.product_name_ctrl.GetValue()
         rate = self.product_rate_ctrl.GetValue()
         data['product_name'] = name
-        data['retail'] = float(rate)
+        try:
+            data['retail'] = float(rate)
+        except ValueError:
+            show_message("Please enter a valid price!", "Error")
+            return None
         return data
     
     def on_submit(self, event):
         data = self.get_data()
+        if not data:
+            return
         prc = ProductRateCalculator(data['retail'], data['product_name'])
         self.parent.store_product_rates(prc.product_olv)
         self.Close()
@@ -285,13 +316,6 @@ class RecordDialog(wx.Dialog):
 # %%
 
 if __name__ == "__main__":
-    
-    results = [(1399, 'Apple iPhone SE (2020) 64GB'),
-               ('799', 'Samsung Galaxy S22')]
-    
-    z = ProductRates(results)
-    print(z.product_rate_df)
-    
     app = wx.App(False)
     frame = MainFrame()
     frame.Show()
