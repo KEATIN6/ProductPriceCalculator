@@ -41,7 +41,6 @@ class ProductRateCalculator:
         else:
             self.product_name = "Undefined Product"
         self.store_rates(rates)
-        print("AHHHHH")
         
     def calculate_maas_rate(self, present_value):
         term = 24
@@ -206,7 +205,16 @@ class MainPanel(wx.Panel):
             
     def on_export(self, event):
         df = self.convert_rates_to_df()
-        print(df)    
+        with wx.FileDialog(self, "Save Export Excel file", wildcard="Excel files *.xlsx",
+                       style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as fileDialog:
+            if fileDialog.ShowModal() == wx.ID_CANCEL:
+                return
+            pathname = fileDialog.GetPath()
+            try:
+                df.to_excel(pathname)
+            except:
+                print("error saving")
+            
         
     def delete_record(self, event):
         selected_row = self.price_olv.GetSelectedObject()
@@ -220,8 +228,7 @@ class MainPanel(wx.Panel):
                 self.rate_results.remove(result)
                 break
         self.update_olv()
-    
-        
+       
     def update_olv(self):
         self.price_olv.SetColumns([
             ColumnDefn('Product Name', 'left', 225, 'name'),
@@ -302,7 +309,6 @@ class RecordDialog(wx.Dialog):
         prc = ProductRateCalculator(data['retail'], data['product_name'])
         self.parent.store_product_rates(prc.product_olv)
         self.Close()
-        
     
     def row_builder(self, widgets):
         sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -311,8 +317,6 @@ class RecordDialog(wx.Dialog):
         sizer.Add(text, 0, wx.ALL, 5)
         return sizer
 
-        
-        
 # %%
 
 if __name__ == "__main__":
