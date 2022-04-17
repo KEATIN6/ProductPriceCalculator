@@ -6,8 +6,11 @@ Created on Sat Apr 16 11:42:04 2022
 """
 # %% Import the used libraries
 
-import numpy_financial as npf
+import wx
 import pandas as pd
+import numpy_financial as npf
+
+from ObjectListView import ObjectListView, ColumnDefn 
 
 # %% Set constants for interest and subsidy
 
@@ -118,6 +121,110 @@ class ProductRates:
         prc = ProductRateCalculator(retail_rate, product_name)
         self.product_rate_df = pd.concat([self.product_rate_df, prc.rate_df])
         
+        
+# %%
+
+class MainPanel(wx.Panel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        
+        self.rate_results = []
+        
+        main_vert_sizer = wx.BoxSizer(wx.VERTICAL)
+        
+        title = wx.StaticText(self, label="Product Rate Calculator")
+        
+        
+        main_vert_sizer.Add(title)
+        
+        self.price_olv = ObjectListView(
+            self, style=wx.LC_REPORT|wx.SUNKEN_BORDER)
+        self.price_olv.SetEmptyListMsg("Please add a record")
+        
+        main_vert_sizer.Add(self.price_olv, 1, wx.EXPAND|wx.ALL)
+        
+        button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        
+        self.btn01 = wx.Button(self, label="Add Record", size=(100,-1))
+        self.btn01.Bind(wx.EVT_BUTTON, self.add_record)
+        self.btn02 = wx.Button(self, label="Remove Record", size=(100,-1))
+        self.btn03 = wx.Button(self, label="Export Excel", size=(100,-1))
+        
+        button_sizer.Add(self.btn01, 0, wx.CENTER, 5)
+        button_sizer.Add(self.btn02, 0, wx.CENTER, 5)
+        button_sizer.Add(self.btn03, 0, wx.CENTER, 5)
+                
+        main_vert_sizer.Add(button_sizer, 0, wx.CENTER, 0)
+        
+        self.SetSizerAndFit(main_vert_sizer)
+        self.update_olv()
+        
+        
+    def add_record(self, event):
+        with RecordDialog() as dlg:
+            dlg.ShowModal()
+    
+        
+    def update_olv(self):
+        self.price_olv.SetColumns([
+            ColumnDefn('Product Name', 'left', 225, 'product_name'),
+            ColumnDefn('Retail Rate', 'right', 100, 'retail'),
+            ColumnDefn('Contract Rate', 'right', 100, 'contract'),
+            ColumnDefn('MDaaS Rate', 'right', 100, 'mdaas'),
+            ColumnDefn('24M Finance', 'right', 100, 'finance_24m'),
+            ColumnDefn('36M Finance', 'right', 100, 'finance_36m')])
+        self.price_olv.SetObjects(self.rate_results)
+
+
+# %%
+
+class MainFrame(wx.Frame):
+    def __init__(self):
+        super().__init__(None, title="Product Rate Calculator", 
+                         size=(800,400))
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.panel_01 = MainPanel(self)
+        self.sizer.Add(self.panel_01, 1, wx.EXPAND)
+        self.SetSizer(self.sizer)
+        
+# %%
+
+class RecordDialog(wx.Dialog):
+    def __init__(self, row=None, parent=None, 
+                 title="Add", addRecord=True):
+        super().__init__(None, title=f"{title} New Product Rate Record")
+        self.addRecord = addRecord
+        self.selected_row = row
+        self.parent = parent
+        
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        
+        size = (100, -1)
+        font = wx.Font(10, wx.SWISS, wx.NORMAL, wx.BOLD)
+        
+        product_name_lbl = wx.StaticText(self, label="Product Name", size=size)
+        product_name_ctrl = wx.TextCtrl(self, value="", size=(200,-1))
+        
+        main_sizer.Add(self.row_builder([product_name_lbl, product_name_ctrl]))
+        
+        product_rate_lbl = wx.StaticText(self, label="Retail", size=size)
+        product_rate_ctrl = wx.TextCtrl(self, value="", size=(200,-1))
+        
+        main_sizer.Add(self.row_builder([product_rate_lbl, product_rate_ctrl]))
+        
+        self.SetSizerAndFit(main_sizer)
+        
+
+    def row_builder(self, widgets):
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        label, text = widgets
+        sizer.Add(label, 0, wx.ALL, 5)
+        sizer.Add(text, 0, wx.ALL, 5)
+        return sizer
+
+        
+        
 # %%
 
 if __name__ == "__main__":
@@ -127,5 +234,12 @@ if __name__ == "__main__":
     
     z = ProductRates(results)
     print(z.product_rate_df)
+    
+    app = wx.App(False)
+    frame = MainFrame()
+    frame.Show()
+    app.MainLoop()
+    del app
+    
         
 # %%
